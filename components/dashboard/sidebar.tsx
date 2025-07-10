@@ -10,14 +10,16 @@ import {
   Users,
   BarChart3,
   Settings,
-  MessageSquare
+  MessageSquare,
+  FileText
 } from 'lucide-react'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Instâncias', href: '/dashboard/instances', icon: Smartphone },
-  { name: 'Campanhas', href: '/dashboard/campaigns', icon: Megaphone },
   { name: 'Contatos', href: '/dashboard/contacts', icon: Users },
+  { name: 'Templates', href: '/dashboard/templates', icon: FileText },
+  { name: 'Campanhas', href: '/dashboard/campaigns', icon: Megaphone },
   { name: 'Mensagens', href: '/dashboard/messages', icon: MessageSquare },
   { name: 'Relatórios', href: '/dashboard/reports', icon: BarChart3 },
   { name: 'Configurações', href: '/dashboard/settings', icon: Settings },

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import connectDB from '@/lib/mongodb/connection'
 import { WhatsAppInstance, Company } from '@/lib/mongodb/models'
+import { evolutionManager } from '@/lib/whatsapp/evolution-manager'
 
 export async function GET(request: NextRequest) {
   try {
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create new instance
+    // Create new instance in database
     const instance = new WhatsAppInstance({
       companyId: session.user.companyId,
       name: name.trim(),
@@ -86,15 +87,64 @@ export async function POST(request: NextRequest) {
     })
 
     await instance.save()
+    console.log(`✅ Instance created in database: ${instance._id}`)
+
+    // Create instance in Evolution API
+    try {
+      console.log(`🔧 Creating instance in Evolution API: ${instance._id}`)
+      const evolutionData = await evolutionManager.createInstance({
+        instanceId: instance._id.toString(),
+        companyId: session.user.companyId
+      })
+      console.log(`✅ Instance created in Evolution API: ${instance._id}`)
+      console.log(`📋 Evolution data received:`, JSON.stringify(evolutionData, null, 2))
+
+      // Update status and save QR Code if available
+      instance.status = 'connecting'
+
+      // Debug QR Code data
+      console.log(`🔍 Checking QR Code data...`)
+      console.log(`📊 evolutionData exists:`, !!evolutionData)
+      console.log(`📊 evolutionData.qrcode exists:`, !!evolutionData?.qrcode)
+      console.log(`📊 evolutionData.qrcode.base64 exists:`, !!evolutionData?.qrcode?.base64)
+
+      if (evolutionData?.qrcode?.base64) {
+        console.log(`📱 QR Code found! Length: ${evolutionData.qrcode.base64.length}`)
+        console.log(`📱 QR Code preview: ${evolutionData.qrcode.base64.substring(0, 50)}...`)
+
+        instance.qrCode = evolutionData.qrcode.base64
+        console.log(`💾 QR Code assigned to instance.qrCode`)
+        console.log(`🔍 instance.qrCode length: ${instance.qrCode.length}`)
+      } else {
+        console.log(`⚠️ No QR Code found in Evolution data`)
+        console.log(`📋 Available keys in evolutionData:`, evolutionData ? Object.keys(evolutionData) : 'null')
+        if (evolutionData?.qrcode) {
+          console.log(`📋 Available keys in qrcode:`, Object.keys(evolutionData.qrcode))
+        }
+      }
+
+      console.log(`💾 Saving instance to database...`)
+      await instance.save()
+      console.log(`✅ Instance saved successfully`)
+
+    } catch (evolutionError) {
+      console.error(`❌ Failed to create instance in Evolution API:`, evolutionError)
+
+      // Update status to disconnected (valid status) but don't delete from database
+      instance.status = 'disconnected'
+      console.error(`❌ Instance ${instance._id} creation failed in Evolution API`)
+      await instance.save()
+    }
 
     return NextResponse.json(
-      { 
+      {
         message: 'Instância criada com sucesso',
         instance: {
           _id: instance._id.toString(),
           name: instance.name,
           status: instance.status,
-          createdAt: instance.createdAt.toISOString()
+          createdAt: instance.createdAt.toISOString(),
+          // error field removed as it's not in the model
         }
       },
       { status: 201 }

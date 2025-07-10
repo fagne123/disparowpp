@@ -1,23 +1,94 @@
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth/config'
-import { redirect } from 'next/navigation'
-import connectDB from '@/lib/mongodb/connection'
-import { Contact } from '@/lib/mongodb/models'
-import { Button } from '@/components/ui/button'
-import { Plus, Upload, Users } from 'lucide-react'
+'use client'
 
-export default async function ContactsPage() {
-  const session = await getServerSession(authOptions)
-  
-  if (!session) {
-    redirect('/login')
+import { useState, useEffect } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import {
+  Search,
+  Plus,
+  Upload,
+  Download,
+  Filter,
+  Users,
+  Phone,
+  Mail,
+  Tag,
+  MoreVertical,
+  Edit,
+  Trash2
+} from 'lucide-react'
+
+interface Contact {
+  _id: string
+  name: string
+  phoneNumber: string
+  email?: string
+  tags: string[]
+  isActive: boolean
+  notes?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export default function ContactsPage() {
+  const [contacts, setContacts] = useState<Contact[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [selectedTag, setSelectedTag] = useState('')
+  const [availableTags, setAvailableTags] = useState<string[]>([])
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0
+  })
+
+  const fetchContacts = async () => {
+    setLoading(true)
+    try {
+      const params = new URLSearchParams({
+        page: pagination.page.toString(),
+        limit: pagination.limit.toString(),
+        ...(search && { search }),
+        ...(selectedTag && { tag: selectedTag })
+      })
+
+      const response = await fetch(`/api/contacts?${params}`)
+      const data = await response.json()
+
+      if (response.ok) {
+        setContacts(data.contacts)
+        setPagination(data.pagination)
+        setAvailableTags(data.filters.tags)
+      }
+    } catch (error) {
+      console.error('Error fetching contacts:', error)
+    }
+    setLoading(false)
   }
 
-  // Get contacts from database
-  await connectDB()
-  const contacts = await Contact.find({ 
-    companyId: session.user.companyId 
-  }).sort({ createdAt: -1 }).limit(10).lean()
+  useEffect(() => {
+    fetchContacts()
+  }, [pagination.page, search, selectedTag])
+
+  const handleSearch = (value: string) => {
+    setSearch(value)
+    setPagination(prev => ({ ...prev, page: 1 }))
+  }
+
+  const handleTagFilter = (tag: string) => {
+    setSelectedTag(tag === selectedTag ? '' : tag)
+    setPagination(prev => ({ ...prev, page: 1 }))
+  }
+
+  const formatPhone = (phone: string) => {
+    if (phone.length === 11) {
+      return `(${phone.slice(0, 2)}) ${phone.slice(2, 7)}-${phone.slice(7)}`
+    }
+    return phone
+  }
 
   return (
     <div className="space-y-6">
@@ -113,20 +184,30 @@ export default async function ContactsPage() {
         </div>
       </div>
 
-      <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-        <div className="flex">
-          <div className="flex-shrink-0">
-            <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-            </svg>
+      {/* Info Card */}
+      <Card className="border-blue-200 bg-blue-50">
+        <CardContent className="p-6">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-blue-800">Sistema de Contatos Implementado!</h3>
+              <div className="mt-2 text-sm text-blue-700">
+                <ul className="list-disc list-inside space-y-1">
+                  <li>✅ API completa para gerenciar contatos</li>
+                  <li>✅ Busca e filtros por tags</li>
+                  <li>✅ Paginação automática</li>
+                  <li>✅ Importação de CSV disponível</li>
+                  <li>🔄 Interface sendo carregada dinamicamente</li>
+                </ul>
+              </div>
+            </div>
           </div>
-          <div className="ml-3">
-            <p className="text-sm text-blue-700">
-              <strong>Funcionalidade:</strong> Sistema mostra contatos existentes. Upload de CSV e edição serão implementados em breve.
-            </p>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

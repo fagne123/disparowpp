@@ -1,66 +1,81 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
+import { CampaignsList } from '@/components/campaigns/campaigns-list'
+import { CampaignStats } from '@/components/campaigns/campaign-stats'
+import { CreateCampaignButton } from '@/components/campaigns/create-campaign-button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Plus, Megaphone } from 'lucide-react'
+import {
+  Plus,
+  BarChart3,
+  Send,
+  Users,
+  Clock,
+  TrendingUp,
+  Megaphone
+} from 'lucide-react'
 
 export default async function CampaignsPage() {
   const session = await getServerSession(authOptions)
-  
+
   if (!session) {
     redirect('/login')
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Campanhas</h1>
-          <p className="text-gray-600">
-            Crie e gerencie suas campanhas de mensagens em massa
-          </p>
-        </div>
-        <Button className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Nova Campanha
-        </Button>
-      </div>
-
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <div className="text-center py-12">
-            <div className="mx-auto h-12 w-12 text-gray-400">
-              <Megaphone className="h-12 w-12" />
-            </div>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">
-              Nenhuma campanha encontrada
-            </h3>
-            <p className="mt-1 text-sm text-gray-500">
-              Comece criando sua primeira campanha de mensagens.
-            </p>
-            <div className="mt-6">
-              <Button className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Criar Primeira Campanha
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-        <div className="flex">
-          <div className="flex-shrink-0">
-            <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-            </svg>
-          </div>
-          <div className="ml-3">
-            <p className="text-sm text-blue-700">
-              <strong>Em desenvolvimento:</strong> Sistema de campanhas será implementado em breve com editor de mensagens, agendamento e relatórios detalhados.
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <div className="container mx-auto py-8 px-4 space-y-8">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              📢 Campanhas
+            </h1>
+            <p className="text-xl text-gray-600 mt-2">
+              Crie e gerencie suas campanhas de WhatsApp
             </p>
           </div>
+
+          <CreateCampaignButton />
         </div>
+
+        {/* Stats Cards */}
+        <Suspense fallback={<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardContent className="p-6">
+                <div className="h-20 bg-gray-200 rounded"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>}>
+          <CampaignStats />
+        </Suspense>
+
+        {/* Campaigns List */}
+        <Card className="border-gray-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Send className="h-5 w-5" />
+              Suas Campanhas
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Suspense fallback={
+              <div className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="h-20 bg-gray-200 rounded-lg"></div>
+                  </div>
+                ))}
+              </div>
+            }>
+              <CampaignsList />
+            </Suspense>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

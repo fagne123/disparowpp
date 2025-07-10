@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth/config'
 import connectDB from '@/lib/mongodb/connection'
 import { WhatsAppInstance } from '@/lib/mongodb/models'
 import { whatsappManager } from '@/lib/whatsapp/manager'
+import { evolutionManager } from '@/lib/whatsapp/evolution-manager'
 
 export async function POST(
   request: NextRequest,
@@ -43,49 +44,27 @@ export async function POST(
     await instance.save()
 
     try {
-      console.log(`🚀 Starting WhatsApp connection for instance ${id}`)
-      console.log(`📊 WhatsApp Manager instance:`, !!whatsappManager)
+      console.log(`🚀 Starting Evolution API 2.3.0 connection for instance ${id}`)
 
-      // Create and connect WhatsApp client
-      const clientStatus = whatsappManager.getClientStatus(id)
-      console.log(`📱 Client status for ${id}:`, clientStatus)
-
-      if (!clientStatus) {
-        console.log(`🔧 Creating new WhatsApp client for ${id}`)
-        await whatsappManager.createClient({
-          instanceId: id,
-          companyId: session.user.companyId
-        })
-        console.log(`✅ WhatsApp client created for ${id}`)
-
-        // Verify client was created
-        const newStatus = whatsappManager.getClientStatus(id)
-        console.log(`🔍 Status after creation:`, newStatus)
-      }
-
-      // Start connection process
-      console.log(`🔗 Connecting WhatsApp client for ${id}`)
-      await whatsappManager.connectClient(id)
-      console.log(`🎉 WhatsApp connection initiated for ${id}`)
-
-      // Verify status after connection attempt
-      const finalStatus = whatsappManager.getClientStatus(id)
-      console.log(`🏁 Final status:`, finalStatus)
+      // Use Evolution API 2.3.0 with WhatsApp Baileys
+      await evolutionManager.connectInstance(id)
+      console.log(`🎉 Evolution API 2.3.0 connection initiated for ${id}`)
 
       return NextResponse.json({
-        message: 'Processo de conexão iniciado',
-        status: 'connecting'
+        message: 'Conexão iniciada via Evolution API 2.3.0 com WhatsApp Baileys',
+        status: 'connecting',
+        integration: 'WHATSAPP-BAILEYS'
       })
-    } catch (whatsappError) {
+    } catch (evolutionError) {
       // Revert status on error
       instance.status = 'disconnected'
       await instance.save()
 
-      console.error('WhatsApp connection error:', whatsappError)
+      console.error('Evolution API connection error:', evolutionError)
       return NextResponse.json(
         {
-          message: 'Erro ao iniciar conexão WhatsApp',
-          error: whatsappError instanceof Error ? whatsappError.message : 'Erro desconhecido'
+          message: 'Erro ao iniciar conexão Evolution API',
+          error: evolutionError instanceof Error ? evolutionError.message : 'Erro desconhecido'
         },
         { status: 500 }
       )

@@ -32,15 +32,21 @@ export function QrCodeModal({ isOpen, onClose, instanceId, instanceName }: QrCod
     setError('')
 
     try {
+      console.log(`🔍 Fetching QR Code for instance: ${instanceId}`)
       const response = await fetch(`/api/instances/${instanceId}/qr`)
       const data = await response.json()
 
+      console.log(`📊 QR Code response:`, { status: response.status, hasQrCode: !!data.qrCode, source: data.source })
+
       if (response.ok) {
         setQrCode(data.qrCode)
+        console.log(`✅ QR Code loaded successfully from ${data.source}`)
       } else {
+        console.log(`❌ QR Code error:`, data.message)
         setError(data.message || 'Erro ao gerar QR Code')
       }
     } catch (error) {
+      console.error(`❌ QR Code fetch error:`, error)
       setError('Erro ao conectar com o servidor')
     } finally {
       setIsLoading(false)

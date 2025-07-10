@@ -85,17 +85,42 @@ export default function DebugPage() {
 
   const testDisconnect = async (instanceId: string) => {
     addLog(`Testando desconexão para ${instanceId}`)
-    
+
     try {
       const response = await fetch(`/api/instances/${instanceId}/disconnect`, {
         method: 'POST'
       })
-      
+
       const data = await response.json()
       if (response.ok) {
         addLog(`✅ Desconectado: ${data.message}`)
       } else {
         addLog(`❌ Erro desconexão: ${data.message}`)
+      }
+    } catch (error) {
+      addLog(`❌ Erro: ${error}`)
+    }
+  }
+
+  const testDelete = async (instanceId: string) => {
+    if (!confirm('Tem certeza que deseja deletar esta instância? Esta ação não pode ser desfeita!')) {
+      return
+    }
+
+    addLog(`🗑️ Deletando instância ${instanceId}`)
+
+    try {
+      const response = await fetch(`/api/instances/${instanceId}/delete`, {
+        method: 'DELETE'
+      })
+
+      const data = await response.json()
+      if (response.ok) {
+        addLog(`✅ Instância deletada: ${data.message}`)
+        // Refresh instances list
+        fetchInstances()
+      } else {
+        addLog(`❌ Erro ao deletar: ${data.message}`)
       }
     } catch (error) {
       addLog(`❌ Erro: ${error}`)
@@ -189,12 +214,19 @@ export default function DebugPage() {
                         >
                           📊 Status
                         </Button>
-                        <Button 
+                        <Button
                           onClick={() => testDisconnect(instance._id)}
                           size="sm"
                           variant="outline"
                         >
                           ❌ Desconectar
+                        </Button>
+                        <Button
+                          onClick={() => testDelete(instance._id)}
+                          size="sm"
+                          variant="destructive"
+                        >
+                          🗑️ Deletar
                         </Button>
                       </div>
                     </div>

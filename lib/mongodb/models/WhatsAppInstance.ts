@@ -6,6 +6,7 @@ export interface IWhatsAppInstance extends Document {
   name: string
   phoneNumber?: string
   status: 'disconnected' | 'connecting' | 'connected' | 'banned'
+  qrCode?: string
   sessionData?: any
   proxyConfig?: any
   lastActivity?: Date
@@ -32,6 +33,10 @@ const WhatsAppInstanceSchema = new Schema<IWhatsAppInstance>({
     type: String,
     enum: ['disconnected', 'connecting', 'connected', 'banned'],
     default: 'disconnected'
+  },
+  qrCode: {
+    type: String,
+    trim: true
   },
   sessionData: {
     type: Schema.Types.Mixed

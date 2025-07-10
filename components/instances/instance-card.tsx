@@ -18,6 +18,7 @@ import {
   Play,
   Square,
   QrCode,
+  Trash2,
   MessageSquare,
   FileText
 } from 'lucide-react'
@@ -67,16 +68,41 @@ const statusConfig = {
 export function InstanceCard({ instance }: InstanceCardProps) {
   const [isConnecting, setIsConnecting] = useState(false)
   const [isDisconnecting, setIsDisconnecting] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [showQrCode, setShowQrCode] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showSendMessage, setShowSendMessage] = useState(false)
   const [currentStatus, setCurrentStatus] = useState(instance.status)
   const [phoneNumber, setPhoneNumber] = useState(instance.phoneNumber)
+  const [hasQrCode, setHasQrCode] = useState(false)
 
   // const socket = useSocket() // Temporariamente desabilitado
   const router = useRouter()
 
   const config = statusConfig[currentStatus]
   const StatusIcon = config.icon
+
+  // Check for QR Code when instance is connecting
+  useEffect(() => {
+    const checkQrCode = async () => {
+      if (currentStatus === 'connecting') {
+        try {
+          const qrResponse = await fetch(`/api/instances/${instance._id}/qr`)
+          if (qrResponse.ok) {
+            const qrData = await qrResponse.json()
+            if (qrData.qrCode) {
+              setHasQrCode(true)
+              console.log(`✅ QR Code available for ${instance.name}`)
+            }
+          }
+        } catch (error) {
+          console.log(`⚠️ QR Code not available for ${instance.name}`)
+        }
+      }
+    }
+
+    checkQrCode()
+  }, [currentStatus, instance._id, instance.name])
 
   // Socket event listeners - Temporariamente desabilitado
   // useEffect(() => {
@@ -154,6 +180,29 @@ export function InstanceCard({ instance }: InstanceCardProps) {
     }
   }
 
+  const handleDelete = async () => {
+    setIsDeleting(true)
+
+    try {
+      const response = await fetch(`/api/instances/${instance._id}/delete`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        // Instance deleted successfully, refresh the page
+        router.refresh()
+      } else {
+        const data = await response.json()
+        console.error('Error deleting instance:', data.message)
+      }
+    } catch (error) {
+      console.error('Error deleting instance:', error)
+    }
+
+    setIsDeleting(false)
+    setShowDeleteConfirm(false)
+  }
+
   return (
     <>
       <Card className="hover:shadow-md transition-shadow">
@@ -189,6 +238,13 @@ export function InstanceCard({ instance }: InstanceCardProps) {
             <span className="font-medium">Criado em:</span>
             <span>{formatRelativeTime(instance.createdAt)}</span>
           </div>
+
+          {currentStatus === 'connecting' && hasQrCode && (
+            <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 p-2 rounded">
+              <QrCode className="h-4 w-4" />
+              <span className="font-medium">QR Code disponível!</span>
+            </div>
+          )}
 
           <div className="pt-2">
             <Link href={`/dashboard/instances/${instance._id}/logs`}>
@@ -226,12 +282,12 @@ export function InstanceCard({ instance }: InstanceCardProps) {
             {currentStatus === 'connecting' && (
               <Button
                 onClick={() => setShowQrCode(true)}
-                variant="outline"
+                variant={hasQrCode ? "default" : "outline"}
                 className="flex-1"
                 size="sm"
               >
                 <QrCode className="h-4 w-4 mr-2" />
-                Ver QR Code
+                {hasQrCode ? 'Ver QR Code' : 'Aguardando QR...'}
               </Button>
             )}
 
@@ -278,6 +334,27 @@ export function InstanceCard({ instance }: InstanceCardProps) {
                 Banido
               </Button>
             )}
+
+            {/* Delete Button - Always available */}
+            <Button
+              onClick={() => setShowDeleteConfirm(true)}
+              disabled={isDeleting}
+              variant="outline"
+              size="sm"
+              className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
+            >
+              {isDeleting ? (
+                <>
+                  <Clock className="h-4 w-4 mr-2 animate-spin" />
+                  Deletando...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Deletar
+                </>
+              )}
+            </Button>
           </div>
         </CardFooter>
       </Card>
@@ -295,6 +372,60 @@ export function InstanceCard({ instance }: InstanceCardProps) {
         instanceId={instance._id}
         instanceName={instance.name}
       />
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center mb-4">
+              <AlertTriangle className="h-6 w-6 text-red-600 mr-3" />
+              <h3 className="text-lg font-semibold text-gray-900">
+                Confirmar Exclusão
+              </h3>
+            </div>
+
+            <p className="text-gray-600 mb-6">
+              Tem certeza que deseja deletar a instância <strong>"{instance.name}"</strong>?
+              <br /><br />
+              Esta ação irá:
+              <br />• Desconectar do WhatsApp
+              <br />• Remover todos os dados da instância
+              <br />• Limpar arquivos de sessão
+              <br /><br />
+              <strong className="text-red-600">Esta ação não pode ser desfeita!</strong>
+            </p>
+
+            <div className="flex gap-3">
+              <Button
+                onClick={() => setShowDeleteConfirm(false)}
+                variant="outline"
+                className="flex-1"
+                disabled={isDeleting}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleDelete}
+                variant="destructive"
+                className="flex-1"
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <>
+                    <Clock className="h-4 w-4 mr-2 animate-spin" />
+                    Deletando...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Deletar Instância
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/config'
 import connectDB from '@/lib/mongodb/connection'
 import { WhatsAppInstance } from '@/lib/mongodb/models'
+import { evolutionManager } from '@/lib/whatsapp/evolution-manager'
 
 export async function POST(
   request: NextRequest,
@@ -46,20 +47,20 @@ export async function POST(
       )
     }
 
-    // Send message via WhatsApp manager
+    // Send message via Evolution API
     try {
-      const result = await whatsappManager.sendMessage(id, to, message)
+      const result = await evolutionManager.sendMessage(id, to, message)
 
       return NextResponse.json({
         success: true,
-        message: 'Mensagem enviada com sucesso',
+        message: 'Mensagem enviada com sucesso via Evolution API',
         to,
         content: message,
         timestamp: new Date().toISOString(),
-        messageId: result.id?.id
+        messageId: result.key?.id
       })
     } catch (error) {
-      console.error('Error sending message:', error)
+      console.error('Error sending message via Evolution API:', error)
       return NextResponse.json(
         { message: error instanceof Error ? error.message : 'Erro ao enviar mensagem' },
         { status: 500 }
