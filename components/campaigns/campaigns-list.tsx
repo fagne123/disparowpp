@@ -16,12 +16,13 @@ import {
   Clock,
   Eye
 } from 'lucide-react'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+// Dropdown menu temporariamente removido
+// import {
+//   DropdownMenu,
+//   DropdownMenuContent,
+//   DropdownMenuItem,
+//   DropdownMenuTrigger,
+// } from '@/components/ui/dropdown-menu'
 
 interface Campaign {
   _id: string
@@ -216,36 +217,20 @@ export function CampaignsList() {
                   <Eye className="h-4 w-4 mr-2" />
                   Ver
                 </Button>
-                
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
-                      <Eye className="h-4 w-4 mr-2" />
-                      Ver Detalhes
-                    </DropdownMenuItem>
-                    {campaign.status === 'draft' && (
-                      <DropdownMenuItem>
-                        <Play className="h-4 w-4 mr-2" />
-                        Iniciar
-                      </DropdownMenuItem>
-                    )}
-                    {campaign.status === 'running' && (
-                      <DropdownMenuItem>
-                        <Pause className="h-4 w-4 mr-2" />
-                        Pausar
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem className="text-red-600">
-                      <AlertTriangle className="h-4 w-4 mr-2" />
-                      Cancelar
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+
+                {campaign.status === 'draft' && (
+                  <Button variant="outline" size="sm" className="text-green-600">
+                    <Play className="h-4 w-4 mr-2" />
+                    Iniciar
+                  </Button>
+                )}
+
+                {campaign.status === 'running' && (
+                  <Button variant="outline" size="sm" className="text-yellow-600">
+                    <Pause className="h-4 w-4 mr-2" />
+                    Pausar
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>
