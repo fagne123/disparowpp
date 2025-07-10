@@ -1,7 +1,25 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  serverExternalPackages: ['whatsapp-web.js', 'puppeteer'],
+  images: {
+    domains: ['localhost'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '*.mongodb.com',
+        port: '',
+        pathname: '/**',
+      },
+    ],
+  },
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.externals.push('whatsapp-web.js', 'puppeteer');
+    }
+    return config;
+  },
+  output: 'standalone',
 };
 
 export default nextConfig;
